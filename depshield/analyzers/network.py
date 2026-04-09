@@ -62,6 +62,44 @@ _PRIVATE_RANGES = [
     ipaddress.ip_network("0.0.0.0/32"),
 ]
 
+# Files that legitimately contain version-like numbers (browserslist data,
+# semver tests, OID tables, etc.).  IPs found inside these are almost always
+# version strings, not real addresses.
+_VERSION_DATA_FILENAMES = {
+    "browserslist", "caniuse-lite", "caniuse", "compat-table",
+    "coerce.js",  # semver test data
+    "agents.js", "browsers.js",  # browserslist data files
+}
+
+
+def _looks_like_version(ip_str: str) -> bool:
+    """Heuristic: does this IP look more like a version string?
+
+    Version strings like 2.3.8.0, 4.5.103.30 are common in browserslist,
+    semver test data, and OID tables.  We use a multi-factor heuristic:
+    - First octet very small (1-14) and last octet is 0 -> version (e.g., 2.3.8.0)
+    - Third octet is very large (>50) -> version (e.g., 4.5.103.30)
+    - All octets < 20 -> version (e.g., 1.2.3.4, 9.6.15.14)
+    """
+    try:
+        parts = [int(p) for p in ip_str.split(".")]
+    except ValueError:
+        return False
+    if len(parts) != 4:
+        return False
+    # Pattern: major.minor.patch.0 with small major
+    if parts[0] <= 14 and parts[3] == 0:
+        return True
+    # Pattern: small major, very large patch (>50) -- like 4.5.103.30
+    if parts[0] <= 14 and parts[2] > 50:
+        return True
+    # Pattern: all octets moderate-sized -- like 1.2.3.4, 9.5.15.14, 3.1.8.25
+    # BUT exclude repeated-octet patterns like 8.8.8.8, 1.1.1.1 which are
+    # well-known DNS/anycast addresses, not version strings.
+    if all(p < 30 for p in parts) and len(set(parts)) > 1:
+        return True
+    return False
+
 
 def _is_private_ip(ip_str: str) -> bool:
     """Return True if the IP is RFC1918 / loopback / link-local."""
@@ -72,7 +110,33 @@ def _is_private_ip(ip_str: str) -> bool:
     return any(addr in net for net in _PRIVATE_RANGES)
 
 
-def _scan_text(text: str) -> List[Tuple[str, Severity, str]]:
+def _is_benign_ip(ip_str: str, filepath: str = "") -> bool:
+    """Return True if the IP should be excluded from findings.
+
+    Covers private ranges and version-like patterns found in data files.
+    """
+    if _is_private_ip(ip_str):
+        return True
+
+    # If file is a known version-data source, apply version heuristic
+    basename = os.path.basename(filepath) if filepath else ""
+    dirparts = filepath.replace("\\", "/").split("/") if filepath else []
+    in_version_context = (
+        basename in _VERSION_DATA_FILENAMES
+        or any(vf in part for part in dirparts for vf in _VERSION_DATA_FILENAMES)
+    )
+    if in_version_context and _looks_like_version(ip_str):
+        return True
+
+    # Even outside known data files, very-low first octets (1-9) are
+    # almost never real C2 addresses and overwhelmingly version numbers
+    if _looks_like_version(ip_str):
+        return True
+
+    return False
+
+
+def _scan_text(text: str, filepath: str = "") -> List[Tuple[str, Severity, str]]:
     """Scan text for network indicators. Returns (title, severity, evidence)."""
     hits: List[Tuple[str, Severity, str]] = []
     seen: Set[str] = set()
@@ -80,7 +144,7 @@ def _scan_text(text: str) -> List[Tuple[str, Severity, str]]:
     # Public IPs
     for m in _IPV4.finditer(text):
         ip = m.group(1)
-        if ip not in seen and not _is_private_ip(ip):
+        if ip not in seen and not _is_benign_ip(ip, filepath):
             seen.add(ip)
             hits.append((
                 f"Hardcoded public IP: {ip}",
@@ -179,8 +243,8 @@ class NetworkAnalyzer(BaseAnalyzer):
                 except OSError:
                     continue
 
-                for title, severity, evidence in _scan_text(content):
-                    rel_path = os.path.relpath(filepath, package.node_modules_path)
+                rel_path = os.path.relpath(filepath, package.node_modules_path)
+                for title, severity, evidence in _scan_text(content, filepath):
                     findings.append(Finding(
                         package_name=package.name,
                         severity=severity,

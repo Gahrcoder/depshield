@@ -23,8 +23,11 @@ _MAX_FILE_SIZE = 512 * 1024
 _BASE64_BLOCK = re.compile(
     r"[A-Za-z0-9+/]{40,}={0,2}",
 )
+# Buffer.from(x, 'base64') is the suspicious form -- it decodes base64 payloads.
+# Plain Buffer.from(x) / Buffer.from(x, 'utf-8') is normal Node.js API usage.
+# atob() is a browser API that is suspicious in a Node context.
 _BASE64_DECODE = re.compile(
-    r"(atob|Buffer\.from|btoa)\s*\(",
+    r"atob\s*\(|Buffer\.from\s*\([^)]*(?:\'|\")(base64)(?:\'|\")",
 )
 
 # 2. Hex string sequences

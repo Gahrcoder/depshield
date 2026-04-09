@@ -83,7 +83,10 @@ def _analyze_content(content: str, source: str, package_name: str, version: str)
         ))
 
     # --- Compression ratio anomaly ------------------------------------ #
-    if cr > 0.75 and len(content) > 200:
+    # Raised threshold from 0.75 to 0.85 and minimum size from 200 to 1000.
+    # Small files (utility modules, type stubs) naturally have high compression
+    # ratios because there isn't enough repetition for deflate to exploit.
+    if cr > 0.85 and len(content) > 1000:
         findings.append(Finding(
             package_name=package_name,
             severity=Severity.MEDIUM,

@@ -20,6 +20,28 @@ _PUBLIC_REGISTRIES = {
     "https://registry.yarnpkg.com/",
 }
 
+# Well-known public npm scopes.  These are NOT private/internal scopes,
+# so the "no private registry configured" warning is a false positive.
+# This list covers the most common scopes from popular open-source projects.
+_KNOWN_PUBLIC_SCOPES = {
+    "@angular", "@babel", "@biomejs", "@changesets", "@clerk",
+    "@cloudflare", "@commitlint", "@discoveryjs", "@emnapi",
+    "@emotion", "@eslint", "@floating-ui", "@fontsource",
+    "@grpc", "@hapi", "@hookform", "@humanwhocodes",
+    "@img", "@isaacs", "@jridgewell",
+    "@material-ui", "@mdx-js", "@medusajs", "@mswjs",
+    "@mui", "@napi-rs", "@nestjs", "@next", "@nrwl",
+    "@octokit", "@opentelemetry",
+    "@prisma", "@radix-ui", "@react-native",
+    "@rollup", "@rushstack",
+    "@sentry", "@shopify", "@sideway", "@sinclair",
+    "@smithy", "@strapi", "@sveltejs", "@swc",
+    "@tanstack", "@testing-library", "@trpc", "@tsconfig",
+    "@types", "@typescript-eslint",
+    "@ungap", "@vercel", "@vitejs", "@vue", "@vueuse",
+    "@webassemblyjs", "@xtuc",
+}
+
 
 def _parse_npmrc(project_root: str) -> Dict[str, str]:
     """Parse .npmrc files for registry configuration.
@@ -82,23 +104,28 @@ class DependencyConfusionAnalyzer(BaseAnalyzer):
         # --- Scoped package with no private registry configured ----------- #
         if package.name.startswith("@"):
             scope = package.name.split("/")[0]
-            scope_registry = self.npmrc.get(scope)
-            default_registry = self.npmrc.get("__default__", "")
 
-            if scope_registry is None and default_registry in _PUBLIC_REGISTRIES | {""}:
-                findings.append(Finding(
-                    package_name=package.name,
-                    severity=Severity.MEDIUM,
-                    category=FindingCategory.DEPENDENCY_CONFUSION,
-                    title=f"Scoped package '{scope}' has no private registry",
-                    description=(
-                        f"The scope '{scope}' is not mapped to a private registry "
-                        f"in .npmrc. If '{package.name}' is an internal package, "
-                        f"an attacker could publish a higher-version package with "
-                        f"the same name on the public npm registry."
-                    ),
-                    evidence=f"scope={scope} registry=public",
-                ))
+            # Skip well-known public scopes -- these are not internal packages
+            if scope in _KNOWN_PUBLIC_SCOPES:
+                pass  # fall through to resolved URL check only
+            else:
+                scope_registry = self.npmrc.get(scope)
+                default_registry = self.npmrc.get("__default__", "")
+
+                if scope_registry is None and default_registry in _PUBLIC_REGISTRIES | {""}:
+                    findings.append(Finding(
+                        package_name=package.name,
+                        severity=Severity.MEDIUM,
+                        category=FindingCategory.DEPENDENCY_CONFUSION,
+                        title=f"Scoped package '{scope}' has no private registry",
+                        description=(
+                            f"The scope '{scope}' is not mapped to a private registry "
+                            f"in .npmrc. If '{package.name}' is an internal package, "
+                            f"an attacker could publish a higher-version package with "
+                            f"the same name on the public npm registry."
+                        ),
+                        evidence=f"scope={scope} registry=public",
+                    ))
 
         # --- resolved URL points to unexpected registry ------------------- #
         if package.resolved_url:

@@ -76,11 +76,25 @@ def _confusable_match(name: str, target: str) -> bool:
     return False
 
 
+# Minimum length for typosquatting comparison.  Very short names (2-3 chars)
+# like "ms", "ws", "qs" have tiny edit distances to many unrelated packages,
+# producing overwhelming false positives.
+_MIN_NAME_LENGTH = 4
+
+# Minimum target length -- don't compare against 2-char targets either.
+_MIN_TARGET_LENGTH = 4
+
+
 def _find_closest(name: str) -> Optional[Tuple[str, int, str]]:
     """Find the closest popular package to *name*.
 
     Returns (target, distance, method) or None.
     """
+    # Strip scope for length check
+    bare_name = name.split("/")[-1] if name.startswith("@") else name
+    if len(bare_name) < _MIN_NAME_LENGTH:
+        return None
+
     norm = _normalize(name)
     best_target: Optional[str] = None
     best_dist = float("inf")
@@ -90,6 +104,11 @@ def _find_closest(name: str) -> Optional[Tuple[str, int, str]]:
         # Skip exact match
         if name == target:
             return None
+
+        # Skip very short targets
+        bare_target = target.split("/")[-1] if target.startswith("@") else target
+        if len(bare_target) < _MIN_TARGET_LENGTH:
+            continue
 
         norm_target = _normalize(target)
 

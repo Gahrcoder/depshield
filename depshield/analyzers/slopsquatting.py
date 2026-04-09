@@ -15,6 +15,12 @@ from depshield.core.models import Finding, FindingCategory, PackageInfo, Severit
 from depshield.core.registry import register_analyzer
 from depshield.data.popular_packages import TOP_PACKAGES
 
+# Import known public scopes to avoid flagging legitimate scoped packages
+try:
+    from depshield.analyzers.dependency_confusion import _KNOWN_PUBLIC_SCOPES
+except ImportError:
+    _KNOWN_PUBLIC_SCOPES: set[str] = set()
+
 # ------------------------------------------------------------------ #
 # Frameworks and utilities that LLMs like to combine                  #
 # ------------------------------------------------------------------ #
@@ -37,8 +43,13 @@ _UTILITY_SUFFIXES = [
 _SCOPED_PATTERNS = [
     # @scope/plausible-but-fake
     re.compile(r"^@[a-z][a-z0-9-]*/(" + "|".join(_UTILITY_SUFFIXES) + r")$"),
-    # @real-scope/hallucinated-subpackage
-    re.compile(r"^@(react|vue|angular|svelte|babel|types|testing-library)/[a-z]+-[a-z]+$"),
+    # @real-scope/hallucinated-subpackage -- only match if the sub-package
+    # name ends with a utility suffix (e.g., @react/http-client).
+    # Previously too broad and matched legitimate packages like @swc/helpers.
+    re.compile(
+        r"^@(react|vue|angular|svelte|babel|types|testing-library)/[a-z]+-("
+        + "|".join(_UTILITY_SUFFIXES) + r")$"
+    ),
 ]
 
 # Pattern: <framework>-<utility>
@@ -47,8 +58,11 @@ _COMBO_PATTERN = re.compile(
 )
 
 # Pattern: names that look auto-generated
+# Note: the four-part kebab pattern was removed because it produces too many
+# false positives on legitimate packages (e.g., buffer-equal-constant-time,
+# call-bind-apply-helpers).  The hype-prefix and tech-suffix patterns are
+# kept since they catch a narrower, more suspicious set.
 _AUTOGEN_PATTERNS = [
-    re.compile(r"^[a-z]+-[a-z]+-[a-z]+-[a-z]+$"),  # four-part kebab
     re.compile(r"^(easy|simple|super|mega|ultra|auto|quick)-[a-z]+$"),  # hype prefix
     re.compile(r"^[a-z]+-(js|ts|io|ai|ml|db|fs|ui|fx|rx)$"),  # tech suffix
 ]
@@ -68,10 +82,13 @@ def _looks_hallucinated(name: str) -> str | None:
     if _COMBO_PATTERN.match(lower):
         return "framework-utility combination (common LLM hallucination pattern)"
 
-    # Check scoped patterns
-    for pat in _SCOPED_PATTERNS:
-        if pat.match(lower):
-            return "scoped package matching LLM hallucination pattern"
+    # Check scoped patterns -- but skip packages from known public scopes
+    if lower.startswith("@"):
+        scope = lower.split("/")[0]
+        if scope not in _KNOWN_PUBLIC_SCOPES:
+            for pat in _SCOPED_PATTERNS:
+                if pat.match(lower):
+                    return "scoped package matching LLM hallucination pattern"
 
     # Check auto-generated-looking names
     for pat in _AUTOGEN_PATTERNS:
