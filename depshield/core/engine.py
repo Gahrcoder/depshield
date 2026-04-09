@@ -161,16 +161,81 @@ def discover_packages(project_path: str) -> List[PackageInfo]:
     return _merge_info(lock_pkgs, nm_pkgs)
 
 
+_MAX_FILE_SIZE = 512 * 1024
+_JS_EXTENSIONS = (".js", ".mjs", ".cjs")
+
+
+def _js_files_for_package(pkg_dir: str) -> List[str]:
+    """List .js/.mjs/.cjs files under a package directory."""
+    result: List[str] = []
+    try:
+        for root, _dirs, files in os.walk(pkg_dir):
+            for f in files:
+                if f.endswith(_JS_EXTENSIONS):
+                    full = os.path.join(root, f)
+                    try:
+                        if os.path.getsize(full) <= _MAX_FILE_SIZE:
+                            result.append(full)
+                    except OSError:
+                        continue
+    except OSError:
+        pass
+    return result
+
+
+def _run_deep_scan(
+    packages: List[PackageInfo],
+    analyzers: list,
+    seen_ids: Set[str],
+    all_findings: List[Finding],
+) -> None:
+    """Walk JS files in each package and call analyze_file on capable analyzers."""
+    file_analyzers = [
+        a for a in analyzers if hasattr(a, "analyze_file")
+    ]
+    if not file_analyzers:
+        return
+
+    for pkg in packages:
+        pkg_dir = pkg.node_modules_path
+        if not pkg_dir or not os.path.isdir(pkg_dir):
+            continue
+
+        for filepath in _js_files_for_package(pkg_dir):
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="replace") as fh:
+                    content = fh.read()
+            except OSError:
+                continue
+
+            rel_path = os.path.relpath(filepath, pkg_dir)
+
+            for analyzer in file_analyzers:
+                try:
+                    findings = analyzer.analyze_file(
+                        rel_path, content, pkg.name
+                    )
+                except Exception:
+                    continue
+
+                for finding in findings:
+                    if finding.id not in seen_ids:
+                        seen_ids.add(finding.id)
+                        all_findings.append(finding)
+
+
 def scan(
     project_path: str,
     exclude_analyzers: Optional[Set[str]] = None,
+    deep: bool = False,
 ) -> ScanResult:
     """Run a full scan against the given project path.
 
     1. Discover packages from lockfile / node_modules.
     2. Instantiate all registered analyzers.
     3. Run each analyzer against each package.
-    4. Deduplicate and return findings.
+    4. (If *deep*) walk JS source files and run file-level analyzers.
+    5. Deduplicate and return findings.
     """
     exclude = exclude_analyzers or set()
     start = time.monotonic()
@@ -185,6 +250,7 @@ def scan(
     import depshield.analyzers.metadata  # noqa: F401
     import depshield.analyzers.network  # noqa: F401
     import depshield.analyzers.obfuscation  # noqa: F401
+    import depshield.analyzers.postmessage  # noqa: F401
     import depshield.analyzers.redos_detector  # noqa: F401
     import depshield.analyzers.slopsquatting  # noqa: F401
     import depshield.analyzers.ssrf_detector  # noqa: F401
@@ -200,8 +266,10 @@ def scan(
     seen_ids: Set[str] = set()
     analyzers_run: List[str] = []
 
+    instances = []
     for cls in analyzer_classes:
         analyzer = cls(project_path) if cls.name == "dependency_confusion" else cls()
+        instances.append(analyzer)
         analyzers_run.append(cls.name)
 
         for pkg in packages:
@@ -214,6 +282,10 @@ def scan(
                 if finding.id not in seen_ids:
                     seen_ids.add(finding.id)
                     all_findings.append(finding)
+
+    # Deep scan: walk JS files and run file-level analyzers
+    if deep:
+        _run_deep_scan(packages, instances, seen_ids, all_findings)
 
     duration = time.monotonic() - start
 

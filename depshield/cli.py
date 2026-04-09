@@ -63,6 +63,11 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="ANALYZER",
         help="Exclude an analyzer by name (repeatable)",
     )
+    scan_parser.add_argument(
+        "--deep",
+        action="store_true",
+        help="Deep scan: analyze JavaScript source files in node_modules",
+    )
 
     return parser
 
@@ -85,6 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         result = scan(
             project_path,
             exclude_analyzers=set(args.exclude),
+            deep=args.deep,
         )
 
         min_sev = _SEVERITY_MAP[args.severity]
