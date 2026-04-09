@@ -16,10 +16,10 @@ from typing import List
 from depshield.analyzers.base import BaseAnalyzer
 from depshield.core.models import Finding, FindingCategory, PackageInfo, Severity
 from depshield.core.registry import register_analyzer
-from depshield.entropy.shannon import EntropyCategory, entropy_category, shannon_entropy
+from depshield.entropy.charclass import char_class_distribution
 from depshield.entropy.compression import compression_ratio
 from depshield.entropy.ngram import bigram_entropy, ngram_uniformity
-from depshield.entropy.charclass import char_class_distribution
+from depshield.entropy.shannon import EntropyCategory, entropy_category, shannon_entropy
 
 _MAX_FILE_SIZE = 512 * 1024
 

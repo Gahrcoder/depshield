@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
-from depshield.core.models import Finding, ScanResult, Severity
+from depshield.core.models import ScanResult, Severity
 
 _SEVERITY_SYMBOL = {
     Severity.CRITICAL: "[!!]",
@@ -23,7 +23,7 @@ def render(result: ScanResult, min_severity: Severity = Severity.INFO,
     filtered = [f for f in result.findings if f.severity >= min_severity]
 
     out.write(f"\n{'=' * 72}\n")
-    out.write(f"  depshield scan results\n")
+    out.write("  depshield scan results\n")
     out.write(f"{'=' * 72}\n\n")
 
     out.write(f"  Packages scanned : {result.packages_scanned}\n")
@@ -45,7 +45,7 @@ def render(result: ScanResult, min_severity: Severity = Severity.INFO,
                   f"{finding.category.value}\n")
         out.write(f"  Package : {finding.package_name}\n")
         out.write(f"  {finding.title}\n")
-        out.write(f"\n")
+        out.write("\n")
         out.write(f"  {finding.description}\n")
         if finding.evidence:
             out.write(f"\n  Evidence: {finding.evidence}\n")

@@ -4,7 +4,6 @@ from __future__ import annotations
 import math
 from typing import Dict
 
-
 _CLASSES = {
     "lowercase": set("abcdefghijklmnopqrstuvwxyz"),
     "uppercase": set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),

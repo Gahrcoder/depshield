@@ -1,0 +1,7 @@
+- id: depshield
+  name: depshield
+  description: Scan npm dependencies for supply chain attacks
+  entry: depshield scan
+  language: python
+  types: [json]
+  files: 'package(-lock)?\.json$'

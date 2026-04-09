@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Dict, List
 
 
 def _ngram_counts(data: str, n: int) -> Counter:
@@ -59,7 +58,7 @@ def ngram_uniformity(data: str, n: int = 2) -> float:
         return 0.0
 
     actual = _ngram_entropy(data, n)
-    num_ngrams = sum(_ngram_counts(data, n).values())
+    sum(_ngram_counts(data, n).values())
     unique = len(_ngram_counts(data, n))
 
     if unique <= 1:

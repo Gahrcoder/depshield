@@ -1,7 +1,6 @@
 """Detect typosquatting via Levenshtein distance and confusable characters."""
 from __future__ import annotations
 
-import re
 from typing import Dict, List, Optional, Tuple
 
 from depshield.analyzers.base import BaseAnalyzer

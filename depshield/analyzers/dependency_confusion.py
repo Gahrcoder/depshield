@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import os
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from depshield.analyzers.base import BaseAnalyzer
 from depshield.core.models import Finding, FindingCategory, PackageInfo, Severity

@@ -8,7 +8,7 @@ import sys
 from depshield import __version__
 from depshield.core.engine import scan
 from depshield.core.models import Severity
-from depshield.output import terminal, json_output, sarif
+from depshield.output import json_output, sarif, terminal
 
 _SEVERITY_MAP = {
     "critical": Severity.CRITICAL,
