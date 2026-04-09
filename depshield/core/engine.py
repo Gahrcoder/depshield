@@ -180,12 +180,16 @@ def scan(
     # Ensure analyzers are loaded (importing triggers @register_analyzer)
     import depshield.analyzers.dependency_confusion  # noqa: F401
     import depshield.analyzers.entropy_analyzer  # noqa: F401
+    import depshield.analyzers.eval_detector  # noqa: F401
     import depshield.analyzers.install_scripts  # noqa: F401
     import depshield.analyzers.metadata  # noqa: F401
     import depshield.analyzers.network  # noqa: F401
     import depshield.analyzers.obfuscation  # noqa: F401
+    import depshield.analyzers.redos_detector  # noqa: F401
     import depshield.analyzers.slopsquatting  # noqa: F401
+    import depshield.analyzers.ssrf_detector  # noqa: F401
     import depshield.analyzers.typosquatting  # noqa: F401
+    import depshield.analyzers.xss_detector  # noqa: F401
 
     analyzer_classes = [
         cls for cls in get_analyzers()

@@ -41,6 +41,10 @@ class FindingCategory(enum.Enum):
     ENTROPY = "entropy"
     OBFUSCATION = "obfuscation"
     NETWORK = "network"
+    DANGEROUS_EVAL = "dangerous_eval"
+    SSRF = "ssrf"
+    XSS = "xss"
+    REDOS = "redos"
 
 
 @dataclass
