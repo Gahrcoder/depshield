@@ -1,0 +1,6 @@
+{
+  "name": "lodash-es",
+  "version": "4.17.21",
+  "description": "Lodash exported as ES modules",
+  "repository": "https://github.com/lodash/lodash"
+}

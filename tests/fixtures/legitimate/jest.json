@@ -1,0 +1,7 @@
+{
+  "name": "jest",
+  "version": "29.6.1",
+  "description": "Delightful JavaScript Testing",
+  "repository": "https://github.com/jestjs/jest",
+  "author": "Meta"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "helmet",
+  "version": "7.0.0",
+  "description": "Help secure Express/Connect apps with various HTTP headers",
+  "repository": "https://github.com/helmetjs/helmet",
+  "author": "Adam Baldwin"
+}

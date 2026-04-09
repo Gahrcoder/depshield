@@ -1,0 +1,6 @@
+{
+  "name": "uuid",
+  "version": "9.0.0",
+  "description": "RFC4122 UUIDs",
+  "repository": "https://github.com/uuidjs/uuid"
+}

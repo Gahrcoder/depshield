@@ -1,0 +1,7 @@
+{
+  "name": "lodash",
+  "version": "4.17.21",
+  "description": "Lodash modular utilities",
+  "repository": "https://github.com/lodash/lodash",
+  "author": "John-David Dalton"
+}

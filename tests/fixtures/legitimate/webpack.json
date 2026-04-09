@@ -1,0 +1,10 @@
+{
+  "name": "webpack",
+  "version": "5.88.2",
+  "description": "Packs modules and assets",
+  "repository": "https://github.com/webpack/webpack",
+  "author": "Tobias Koppers",
+  "scripts": {
+    "build": "webpack --mode production"
+  }
+}

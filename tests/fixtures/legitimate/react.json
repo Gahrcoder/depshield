@@ -1,0 +1,7 @@
+{
+  "name": "react",
+  "version": "18.2.0",
+  "description": "A JavaScript library for building user interfaces",
+  "repository": "https://github.com/facebook/react",
+  "author": "Meta"
+}

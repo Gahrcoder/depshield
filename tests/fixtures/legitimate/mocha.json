@@ -1,0 +1,7 @@
+{
+  "name": "mocha",
+  "version": "10.2.0",
+  "description": "Simple, flexible, fun test framework",
+  "repository": "https://github.com/mochajs/mocha",
+  "author": "TJ Holowaychuk"
+}

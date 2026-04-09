@@ -1,0 +1,7 @@
+{
+  "name": "yargs",
+  "version": "17.7.2",
+  "description": "Yargs the modern, pirate-themed, successor to optimist",
+  "repository": "https://github.com/yargs/yargs",
+  "author": "Ben Coe"
+}

@@ -13,13 +13,13 @@ from depshield.core.registry import register_analyzer
 # ------------------------------------------------------------------ #
 
 _NETWORK_PATTERNS: List[Tuple[re.Pattern, str, Severity]] = [
-    (re.compile(r"\bcurl\b.*\|.*\bsh\b"), "curl piped to shell", Severity.CRITICAL),
-    (re.compile(r"\bwget\b.*\|.*\bsh\b"), "wget piped to shell", Severity.CRITICAL),
+    (re.compile(r"\bcurl\b.*\|.*\b(ba)?sh\b"), "curl piped to shell", Severity.CRITICAL),
+    (re.compile(r"\bwget\b.*\|.*\b(ba)?sh\b"), "wget piped to shell", Severity.CRITICAL),
     (re.compile(r"\bcurl\b.*\b(POST|--data|--upload)\b", re.I), "curl POST / data exfil", Severity.HIGH),
     (re.compile(r"\bwget\b.*--post", re.I), "wget POST / data exfil", Severity.HIGH),
     (re.compile(r"\b(https?://\S+)"), "outbound URL in script", Severity.MEDIUM),
     (re.compile(r"\bnc\b.*-e\b"), "netcat reverse shell", Severity.CRITICAL),
-    (re.compile(r"\b/dev/tcp/"), "bash TCP device", Severity.CRITICAL),
+    (re.compile(r"/dev/tcp/"), "bash TCP device", Severity.CRITICAL),
 ]
 
 _EXEC_PATTERNS: List[Tuple[re.Pattern, str, Severity]] = [
@@ -41,10 +41,13 @@ _ENCODED_PATTERNS: List[Tuple[re.Pattern, str, Severity]] = [
 
 _FS_PATTERNS: List[Tuple[re.Pattern, str, Severity]] = [
     (re.compile(r"\b(readFileSync|readFile)\b.*(/etc/passwd|/etc/shadow|\.ssh/|id_rsa)"), "reading sensitive files", Severity.CRITICAL),
+    (re.compile(r"(\.ssh|id_rsa|\.npmrc|\.env).*\b(readFileSync|readFile)\b"), "reading sensitive files", Severity.CRITICAL),
+    (re.compile(r"\b(readFileSync|readFile)\b.{0,60}(\.ssh|id_rsa|\.npmrc|\.env)"), "reading sensitive files", Severity.CRITICAL),
     (re.compile(r"\b(writeFileSync|appendFileSync)\b.*\.(bashrc|profile|zshrc)"), "writing to shell profile", Severity.CRITICAL),
     (re.compile(r"\bfs\.(chmod|chown)Sync?\s*\("), "changing file permissions", Severity.HIGH),
     (re.compile(r"\b(rmSync|unlinkSync)\b"), "file deletion", Severity.MEDIUM),
     (re.compile(r"\bchmod\b.*\+x\b"), "making file executable", Severity.HIGH),
+    (re.compile(r"require\s*\(\s*[\x27\x22]https?[\x27\x22]\s*\)\.request"), "outbound HTTP request in script", Severity.HIGH),
 ]
 
 _ENV_PATTERNS: List[Tuple[re.Pattern, str, Severity]] = [

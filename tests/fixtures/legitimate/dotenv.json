@@ -1,0 +1,7 @@
+{
+  "name": "dotenv",
+  "version": "16.3.1",
+  "description": "Loads environment variables from .env file",
+  "repository": "https://github.com/motdotla/dotenv",
+  "author": "Scott Motte"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "react-dom",
+  "version": "18.2.0",
+  "description": "React package for working with the DOM",
+  "repository": "https://github.com/facebook/react",
+  "author": "Meta"
+}

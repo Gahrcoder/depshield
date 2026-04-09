@@ -1,0 +1,7 @@
+{
+  "name": "commander",
+  "version": "11.0.0",
+  "description": "The complete solution for node.js command-line programs",
+  "repository": "https://github.com/tj/commander.js",
+  "author": "TJ Holowaychuk"
+}

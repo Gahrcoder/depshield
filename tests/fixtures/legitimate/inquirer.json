@@ -1,0 +1,7 @@
+{
+  "name": "inquirer",
+  "version": "9.2.7",
+  "description": "A collection of common interactive command line user interfaces",
+  "repository": "https://github.com/SBoudrias/Inquirer.js",
+  "author": "Simon Boudrias"
+}

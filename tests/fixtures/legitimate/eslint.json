@@ -1,0 +1,7 @@
+{
+  "name": "eslint",
+  "version": "8.45.0",
+  "description": "An AST-based pattern checker for JavaScript",
+  "repository": "https://github.com/eslint/eslint",
+  "author": "Nicholas C. Zakas"
+}

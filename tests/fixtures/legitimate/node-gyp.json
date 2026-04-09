@@ -1,0 +1,9 @@
+{
+  "name": "node-gyp",
+  "version": "9.4.0",
+  "description": "Node.js native addon build tool",
+  "repository": "https://github.com/nodejs/node-gyp",
+  "scripts": {
+    "postinstall": "node-gyp rebuild"
+  }
+}

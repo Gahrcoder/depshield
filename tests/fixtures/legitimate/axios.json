@@ -1,0 +1,7 @@
+{
+  "name": "axios",
+  "version": "1.4.0",
+  "description": "Promise based HTTP client for the browser and node.js",
+  "repository": "https://github.com/axios/axios",
+  "author": "Matt Zabriskie"
+}
