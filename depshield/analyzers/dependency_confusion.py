@@ -24,22 +24,37 @@ _PUBLIC_REGISTRIES = {
 # so the "no private registry configured" warning is a false positive.
 # This list covers the most common scopes from popular open-source projects.
 _KNOWN_PUBLIC_SCOPES = {
-    "@angular", "@babel", "@biomejs", "@changesets", "@clerk",
-    "@cloudflare", "@commitlint", "@discoveryjs", "@emnapi",
-    "@emotion", "@eslint", "@floating-ui", "@fontsource",
-    "@grpc", "@hapi", "@hookform", "@humanwhocodes",
-    "@img", "@isaacs", "@jridgewell",
-    "@material-ui", "@mdx-js", "@medusajs", "@mswjs",
-    "@mui", "@napi-rs", "@nestjs", "@next", "@nrwl",
-    "@octokit", "@opentelemetry",
-    "@prisma", "@radix-ui", "@react-native",
-    "@rollup", "@rushstack",
-    "@sentry", "@shopify", "@sideway", "@sinclair",
-    "@smithy", "@strapi", "@sveltejs", "@swc",
+    # Build tools & compilers
+    "@babel", "@esbuild", "@rollup", "@swc", "@vitejs",
+    # Frontend frameworks
+    "@angular", "@mui", "@next", "@nuxtjs", "@sveltejs", "@vue", "@vueuse",
+    # React ecosystem
+    "@dnd-kit", "@floating-ui", "@hookform", "@radix-ui",
+    "@react-aria", "@react-native", "@react-stately", "@react-types",
+    # Type definitions & linting
+    "@types", "@typescript-eslint", "@eslint", "@biomejs",
+    # Cloud & infrastructure
+    "@aws-crypto", "@aws-sdk", "@cloudflare", "@smithy", "@vercel",
+    # Backend frameworks
+    "@hapi", "@medusajs", "@nestjs", "@strapi",
+    # Observability & analytics
+    "@opentelemetry", "@sentry",
+    # Database & ORM
+    "@mikro-orm", "@prisma",
+    # CLI & developer tools
+    "@changesets", "@commitlint", "@oclif",
+    # Utilities & shared libraries
+    "@ariakit", "@discoveryjs", "@emnapi", "@emotion",
+    "@fontsource", "@formatjs", "@graphql-codegen", "@graphql-tools",
+    "@graphql-typed-document-node", "@grpc",
+    "@humanwhocodes", "@img", "@inquirer",
+    "@internationalized", "@ioredis", "@isaacs", "@jridgewell",
+    "@material-ui", "@mdx-js", "@msgpackr-extract", "@mswjs",
+    "@napi-rs", "@nodelib", "@nrwl",
+    "@octokit", "@protobufjs",
+    "@rushstack", "@sendgrid", "@shopify", "@sideway", "@sinclair",
     "@tanstack", "@testing-library", "@trpc", "@tsconfig",
-    "@types", "@typescript-eslint",
-    "@ungap", "@vercel", "@vitejs", "@vue", "@vueuse",
-    "@webassemblyjs", "@xtuc",
+    "@ungap", "@webassemblyjs", "@xtuc",
 }
 
 

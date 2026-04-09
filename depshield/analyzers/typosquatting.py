@@ -95,6 +95,9 @@ def _find_closest(name: str) -> Optional[Tuple[str, int, str]]:
     if len(bare_name) < _MIN_NAME_LENGTH:
         return None
 
+    is_scoped = name.startswith("@")
+    name_scope = name.split("/")[0] if is_scoped else ""
+
     norm = _normalize(name)
     best_target: Optional[str] = None
     best_dist = float("inf")
@@ -108,6 +111,22 @@ def _find_closest(name: str) -> Optional[Tuple[str, int, str]]:
         # Skip very short targets
         bare_target = target.split("/")[-1] if target.startswith("@") else target
         if len(bare_target) < _MIN_TARGET_LENGTH:
+            continue
+
+        target_is_scoped = target.startswith("@")
+        target_scope = target.split("/")[0] if target_is_scoped else ""
+
+        # For scoped packages, only compare against:
+        # - Packages in the same scope (e.g., @babel/core vs @babel/cors)
+        # Do NOT compare across different scopes or scoped-vs-unscoped
+        # because stripping the scope makes unrelated names look similar
+        # (e.g., @react-aria/color -> color ~= colors,
+        #  @react-stately/form -> form ~= forms from @angular/forms).
+        if is_scoped and not target_is_scoped:
+            continue
+        if not is_scoped and target_is_scoped:
+            continue
+        if is_scoped and target_is_scoped and name_scope != target_scope:
             continue
 
         norm_target = _normalize(target)

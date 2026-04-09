@@ -75,6 +75,29 @@ class TestTyposquattingShortNames:
         findings = analyzer.analyze(pkg)
         assert len(findings) >= 1, "'expres' should still be detected as typosquat of 'express'"
 
+    @pytest.mark.parametrize("name", [
+        "@dnd-kit/core",
+        "@swc/core",
+        "@strapi/core",
+        "@floating-ui/core",
+        "@react-aria/color",
+        "@react-stately/form",
+        "@radix-ui/rect",
+        "@smithy/uuid",
+    ])
+    def test_scoped_subpackage_not_compared_to_unscoped(self, analyzer, name):
+        """Scoped sub-package names should not be compared against unscoped packages.
+
+        @dnd-kit/core -> 'core' is distance 1 from 'cors' but is not a typosquat.
+        @react-aria/color -> 'color' is distance 1 from 'colors' but is not a typosquat.
+        """
+        pkg = make_package(name=name)
+        findings = analyzer.analyze(pkg)
+        assert len(findings) == 0, (
+            f"Scoped package '{name}' should not be flagged as typosquat "
+            f"of an unscoped package. Got: {findings}"
+        )
+
 
 # ================================================================== #
 # FP2: Network -- version-like IP addresses                           #
@@ -121,6 +144,24 @@ class TestNetworkVersionLikeIPs:
         hits = _scan_text(text)
         ip_hits = [h for h in hits if "IP" in h[0]]
         assert len(ip_hits) >= 1
+
+    def test_svg_path_data_not_flagged(self):
+        """IP-like numbers in SVG path data should not be flagged.
+
+        Icon libraries like @medusajs/icons contain SVG paths with coordinates
+        that look like IP addresses (e.g., d="M39.141.7.7").
+        """
+        svg_content = (
+            'd: "M9 4.91c0-.163.037-.323.108-.464a.85.85 0 0 1 .293-.334'
+            'A.7.7 0 0 1 9.798 4a.7.7 0 0 1 .39.141l3.454 2.59'
+            'c.11.082.2.195.263.33a1.04 1.04 0 0 1 0 .876.9.9 0 0 1'
+            '-.263.33l-3.455 2.59a.7.7 0 0 1-.39.141"'
+        )
+        hits = _scan_text(svg_content)
+        ip_hits = [h for h in hits if "IP" in h[0]]
+        assert len(ip_hits) == 0, (
+            f"SVG path coordinates should not be flagged as IPs: {ip_hits}"
+        )
 
 
 # ================================================================== #

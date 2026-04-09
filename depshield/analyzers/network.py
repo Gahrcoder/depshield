@@ -24,6 +24,20 @@ _IPV4 = re.compile(
     r"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b"
 )
 
+# Context patterns that indicate an IP-like match is actually SVG path data,
+# CSS values, or other non-network content.
+_SVG_CONTEXT = re.compile(
+    r'(?:'
+    r'\bd:\s*["\']|'         # SVG path d= attribute
+    r'viewBox\s*[=:]|'        # SVG viewBox
+    r'points\s*[=:]|'         # SVG points
+    r'\bM\s*[\d.]+|'         # SVG moveto command
+    r'\bL\s*[\d.]+|'         # SVG lineto command
+    r'\bC\s*[\d.]+'          # SVG curveto command
+    r')',
+    re.IGNORECASE,
+)
+
 _URL = re.compile(
     r"https?://[^\s'\"`,;)}>\]]{4,120}"
 )
@@ -144,13 +158,20 @@ def _scan_text(text: str, filepath: str = "") -> List[Tuple[str, Severity, str]]
     # Public IPs
     for m in _IPV4.finditer(text):
         ip = m.group(1)
-        if ip not in seen and not _is_benign_ip(ip, filepath):
-            seen.add(ip)
-            hits.append((
-                f"Hardcoded public IP: {ip}",
-                Severity.HIGH,
-                ip,
-            ))
+        if ip in seen or _is_benign_ip(ip, filepath):
+            continue
+        # Check context: if the IP appears inside SVG path data, skip it.
+        # Look at 80 chars before the match for SVG context markers.
+        context_start = max(0, m.start() - 80)
+        context = text[context_start:m.start()]
+        if _SVG_CONTEXT.search(context):
+            continue
+        seen.add(ip)
+        hits.append((
+            f"Hardcoded public IP: {ip}",
+            Severity.HIGH,
+            ip,
+        ))
 
     # Telegram webhooks
     for m in _TELEGRAM.finditer(text):
